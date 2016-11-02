@@ -1,6 +1,7 @@
 
 #include <vector>
 #include "Ball.h"
+#include <random>
 #include <iostream>
 #include <SFML/Graphics.hpp>
 #include <SFML/Window.hpp>
@@ -11,6 +12,14 @@
 #include <SFML/Main.hpp>
 using namespace sf;
 using namespace std;
+
+float screenWidth = 800, screenHeight = 600;
+float paddleThickness = 30.f, paddleLength = 100.f;
+float paddleSpeed = 300.f;
+string ttfPath = "ITCBLKAD.ttf";
+Font font;
+
+
 /*
 void updateScene();
 void renderFrame();
@@ -29,13 +38,13 @@ public:
 */
 
 const float pi = 3.14159f;
-class MaShape {
+class MaShape { //this stuff is here because I want a list of objects in the scene. I wanna loop through them updating and rendering 1by1; but I'm very lazy and I'm loosing faith in this scenario...
 public:
 	Vector2f velocity;
 	//sf::Vector2f position;
 
-	void Render(RenderWindow* wind) {};
-	void Update(float dt) {};
+	virtual void Render(RenderWindow* wind) {};
+	virtual void Update(float dt) {};
 	/*bool CheckCollision(Entity* entity)
 	{
 		return this->getGlobalBounds().intersects(entity->getGlobalBounds());
@@ -44,25 +53,79 @@ public:
 //	void DetectCollision(MaShape* other) {};
 };
 std::vector <MaShape*> objectsInDaScene;// = new std::vector <MaShape*>;
+class Paddle :public MaShape {
+private:
+	//float thickness = 30.f, length=100.f;
+
+public:
+	int score;
+	Text text;
+	//float thickness = 30.f, length = 100.f;
+	RectangleShape* rect;
+	Paddle(Vector2f position, float thic, float length) {
+		rect = new sf::RectangleShape(Vector2f(thic, length));
+		rect->setFillColor(sf::Color::Blue);
+		rect->setPosition(position);
+		score = 0;
+//		Font test;
+//		test.loadFromFile("arial.ttf");
+	}
+	//suda peredaem speed i obnovlyaem, ok?
+	void Update(float dt, Vector2f vel) {//todo if if if if button pressed i tede
+		this->velocity = vel;
+
+		Vector2f tempPos = rect->getPosition();
+		tempPos += velocity*dt;
+		if (tempPos.y <= 0 || tempPos.y + rect->getSize().y > 600)
+			return;
+		rect->setPosition(tempPos);
+		//cout << rect->getPosition().y << endl;
+		
+		
+	}
+
+	void Render(RenderWindow* window) {
+
+		window->draw(*rect);
+		
+		/*
+		if(font.loadFromFile("arial.ttf"))
+		{
+			text.setPosition(0, 0);
+			text.setFillColor(Color::Red);
+			text.setFont(font);
+			text.setCharacterSize(150);
+			text.setString("i want to sleep");
+		}
+		*/
+		window->draw(text);
+	}
+};
 class Ball:public MaShape {
 public:
+	Paddle* p1;
+	Paddle* p2;
 	float angle = 0.f;
+	float ballSpeed = 100;
 	CircleShape* circle;
 
-	Ball() {
+	Ball(Paddle* pad1, Paddle* pad2) {
 		circle = new sf::CircleShape(10.f);
 		circle->setFillColor(sf::Color::Red);
-		velocity.y = 1;
-		velocity.x = 1;
+		circle->setOrigin(Vector2f(circle->getRadius(), circle->getRadius()));
+		velocity = RandomizeAngle();
+		p1 = pad1;
+		p2 = pad2;
+		Reset();
+		
 	}
 	void Update(float dt) {
+		CheckBorders();
 		Vector2f tempPos = circle->getPosition();
 		tempPos += velocity*dt;
 		circle->setPosition(tempPos);
-
-		float factor = ballSpeed * dt;
-		ball.move(std::cos(ballAngle) * factor, std::sin(ballAngle) * factor);
-
+		CheckPaddle(p1);
+		CheckPaddle(p2);
 	//TODO
 	//DetectCollision
 	}
@@ -71,6 +134,9 @@ public:
 		//wind->draw(circle);
 		wind->draw(*circle);
 	}
+	void Reset() {
+		circle->setPosition(Vector2f(screenWidth / 2, screenHeight / 2));
+	}
 	/*
 	Vector2f DetectCollision(Ball* b) {
 		b->circle->getPosition();
@@ -78,72 +144,104 @@ public:
 	}
 	*/
 
-	void RandomizeAngle() {
-		do
-		{
-			// Make sure the ball initial angle is not too much vertical
-			angle = (std::rand() % 360) * 2 * pi / 360;
-		} while (std::abs(std::cos(angle)) < 0.7f);
-	}
-};
-class Paddle :public MaShape {
-private: 
-	//float thickness = 30.f, length=100.f;
 	
-public:
-	//float thickness = 30.f, length = 100.f;
-	RectangleShape* rect;
-	Paddle(Vector2f position, float thic, float length) {
-		rect = new sf::RectangleShape(Vector2f(thic, length));
-		rect->setFillColor(sf::Color::Blue);
-		rect->setPosition(position);
-
-	}
-	//suda peredaem speed i obnovlyaem, ok?
-	void Update(float dt, Vector2f vel) {//todo if if if if button pressed i tede
-		this->velocity = vel;
+	void CheckBorders() {
+		if (circle->getGlobalBounds().top  <= 0)
+			FlipYVel();
+		if (circle->getGlobalBounds().top + circle->getGlobalBounds().height >= screenHeight)
+			FlipYVel();
 		
-		Vector2f tempPos = rect->getPosition();
-		tempPos += velocity*dt;
-		if (tempPos.y <= 0 || tempPos.y + rect->getSize().y > 600)
-			return;
-		rect->setPosition(tempPos);
-		cout<<rect->getPosition().y<<endl;
+	}
+	
+	void CheckPaddle(Paddle * p ) {
+		
+		if (this->circle->getGlobalBounds().intersects(p->rect->getGlobalBounds())) 	
+			{
+//			FlipXVel();
+//			FlipYVel();
+			
+			//Vector2f padCenter = Vector2f(p->rect->getPosition().x + paddleLength/2, p->rect->getPosition().x + paddleThickness/2);
+			float padCenter = p->rect->getPosition().y  + paddleLength/ 2;
+			
+			float yDifference = padCenter - this->circle->getPosition().y;
+			float yRatio = yDifference / (paddleLength / 2);
+			if (yDifference > 0)
+				FlipYVel();
+			velocity.y *= 2+yRatio;          //It's not exactly how it's supposed to work, but it somehow does..
+		    velocity *=  1.1f;
+			//cout << "getBallPos: " << yRatio << endl;
+			cout << "getPos().y " << this->circle->getPosition().y << endl;
+			cout << "padCenter.y " << padCenter << endl;
+			cout << "yDIf: " << yDifference << endl;
+			cout << "yRat: " << yRatio << endl;
+			cout << velocity.x<<endl;
+			cout << velocity.y << endl;
+			FlipXVel();
+	
+//			Vector2f padCenter = Vector2f(p->rect->getPosition().x + paddleLength / 2, p->rect->getPosition().x + paddleThickness / 2);
+
+		}
+	}
+	void FlipYVel() {
+		velocity.y = -velocity.y;
+	}
+	void FlipXVel() {
+		velocity.x = -velocity.x;
 	}
 
-	void Render(RenderWindow* window){
-		window->draw(*rect);
+	Vector2f RandomizeAngle() {
+		float Xvel;
+		float Yvel;
+		Xvel = rand() % (270 - 230 + 1) + 230;
+		Yvel = 300 - Xvel;
+		if (rand() % 2 > 0) //0or1
+			Xvel = -Xvel;
+		return Vector2f(Xvel, Yvel);
+		
 	}
 };
 
-//class PlayerPaddle:public Paddle {
-class Player{
+class StupidAI {
 public:
-	//using Paddle::Paddle;
-	static Vector2f CheckInput() {
-	
-		if (Keyboard::isKeyPressed(Keyboard::Up)) return Vector2f(0, -200);
-		else if(Keyboard::isKeyPressed(Keyboard::Down)) return Vector2f(0, 200);
+	static float WhereDoIGo(Ball* b, Paddle* p ) {
+		if (b->circle->getPosition().y > p->rect->getPosition().y + paddleLength / 2)
+			return paddleSpeed;
+		else
+			return -paddleSpeed;
+	}
+};
+
+
+
+class Player{ 
+public:
+	static Vector2f CheckInputP1() {
+		if (Keyboard::isKeyPressed(Keyboard::Up)) return Vector2f(0, -paddleSpeed);
+		else if(Keyboard::isKeyPressed(Keyboard::Down)) return Vector2f(0, paddleSpeed);
+		else return Vector2f(0, 0);
+	}
+	static Vector2f CheckInputP2() { //There is a nice Command pattern, which I ,sadly,have no time to implement
+
+		if (Keyboard::isKeyPressed(Keyboard::W)) return Vector2f(0, -paddleSpeed);
+		else if (Keyboard::isKeyPressed(Keyboard::S)) return Vector2f(0, paddleSpeed);
 		else return Vector2f(0, 0);
 	}
 };
 
-//class AIPaddle {
-//public:
-	
 
-//}
-
-float screenWidth = 800, screenHeight = 600;
-float paddleThickness = 30.f, paddleLength = 100.f;
 int main()
+//static void Main()
 {
+	
+	bool vsAI = true;
+	srand(time(NULL));
 	sf::RenderWindow window(sf::VideoMode(screenWidth, screenHeight), "SFML works!");
-	Ball* b = new Ball();
+	Paddle* p1 = new Paddle(Vector2f(screenWidth - paddleThickness, screenHeight / 2), paddleThickness, paddleLength);
+	Paddle* p2 = new Paddle(Vector2f(0, screenHeight / 2), paddleThickness, paddleLength);
+	Ball* b = new Ball(p1,p2);
 	Clock clock;
 	//PlayerPaddle* p1 = new PlayerPaddle(Vector2f(200.f, 400.f));
-	Paddle* p1 = new Paddle(Vector2f(screenWidth - paddleThickness, screenHeight/2), paddleThickness, paddleLength);
-	Paddle* p2 = new Paddle(Vector2f(0, screenHeight / 2), paddleThickness, paddleLength);
+	
 	while (window.isOpen())
 	{
 		sf::Event event;
@@ -164,9 +262,9 @@ int main()
 		//objectsInDaScene[0]->Update();
 		//objectsInDaScene[0]->Render(window);
 		b->Update(dt);
-		
-		p1->Update(dt,Player::CheckInput());
-		p2->Update(dt, Vector2f(0,200));
+		p1->Update(dt, Player::CheckInputP1());
+		if(vsAI)p2->Update(dt, Vector2f(0,StupidAI::WhereDoIGo(b, p2)));
+		else p2->Update(dt, Player::CheckInputP2());
 		b->Render(&window);
 		p1->Render(&window);
 		p2->Render(&window);
