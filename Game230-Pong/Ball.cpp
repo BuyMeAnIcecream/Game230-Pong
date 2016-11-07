@@ -2,7 +2,7 @@
 using namespace std;
 static const float ballVelocity = 300.f;
 static const int BALL_RADIUS = 10;
-	Ball::Ball(Paddle* pad1, Paddle* pad2, Paddle* br) {
+	Ball::Ball() {
 		circle = new sf::CircleShape(BALL_RADIUS);
 		circle->setFillColor(sf::Color::Red);
 		circle->setOrigin(Vector2f(circle->getRadius(), circle->getRadius()));
@@ -10,30 +10,32 @@ static const int BALL_RADIUS = 10;
 		vel = ballVelocity;
 		direction = RandomizeAngle();
 		srand(time(NULL));
-		p1 = pad1;
-		p2 = pad2;
-		brick = br;
+//		p1 = pad1;
+//		p2 = pad2;
+//		brick = br;
 		Reset();
 		texture.loadFromFile("ball.png");
 		circle->setTexture(&texture);
 		buf.loadFromFile("bounce.ogg");
 		sound.setBuffer(buf);
 	}
-	void Ball::Update(float dt) {
+	
+	Vector2f Ball::getPosition() {
+		return circle->getPosition();
+	}
+		void Ball::Update(float dt) {
 		CheckBorders();
 		Vector2f tempPos = getPosition();
 		tempPos.x += direction.x*vel*dt;
 		tempPos.y += direction.y*vel*dt;
 		circle->setPosition(tempPos);
 //		position = tempPos;
-		CheckPaddle(p1);
-		CheckPaddle(p2);
-		CheckPaddle(brick);
+//		CheckPaddle(p1);
+//		CheckPaddle(p2);
+//		CheckPaddle(brick);
 	}
 
-	Vector2f Ball::getPosition() {
-		return circle->getPosition();
-	}
+
 
 	void Ball::Render(sf::RenderWindow* wind) {
 		wind->draw(*circle);
@@ -54,27 +56,22 @@ static const int BALL_RADIUS = 10;
 
 	}
 
-	void Ball::CheckPaddle(Paddle * p) {
-		if (this->circle->getGlobalBounds().intersects(p->rect->getGlobalBounds()))
-		{
-			float padCenter = p->rect->getPosition().y + PADDLE_LENGTH / 2;
-			
-			float yDifference = padCenter - getPosition().y;
-			
-			float yRatio = yDifference / (PADDLE_LENGTH / 2);
-//			cout << yDifference << endl;
-//			if (yDifference > 0)
-//				FlipYVel();
-			direction.y = -yRatio;
-//			direction.x = 1 - abs(yRatio);
-
-			FlipXVel();
-			
-			sound.play();
-			cout << direction.x << endl;
-		}
+	FloatRect Ball::GetGlobalBounds() {
+		return circle->getGlobalBounds();
 	}
+	
 
+	void Ball::BounceOff(float padCenterY) {
+//		float padCenter = p->rect->getPosition().y + PADDLE_LENGTH / 2;
+//		float padCenter = padCenterY 
+		float yDifference = padCenterY - getPosition().y;
+
+		float yRatio = yDifference / (PADDLE_LENGTH / 2);
+		direction.y = -yRatio;
+		FlipXVel();
+
+		sound.play();
+	}
 
 	void Ball::FlipYVel() {
 		direction.y = -direction.y;

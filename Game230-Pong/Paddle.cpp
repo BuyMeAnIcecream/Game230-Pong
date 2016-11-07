@@ -1,7 +1,7 @@
 #include "Paddle.h"
 using namespace std;
 
-	Paddle::Paddle(Vector2f pos, float thic, float length) {
+	Paddle::Paddle(Vector2f pos, float thic, float length, Ball* b) {
 		rect = new sf::RectangleShape(Vector2f(thic, length));
 		rect->setFillColor(sf::Color::Blue);
 		hereIStart = pos;
@@ -10,11 +10,11 @@ using namespace std;
 		text.setFillColor(Color::Red);
 		text.setFont(font);
 		text.setCharacterSize(50);
+		ball = b;
 	}
 
 	void Paddle::Reset() {
 		rect->setPosition(hereIStart);
-
 	}
 	void Paddle::HardReset() {
 		rect->setPosition(hereIStart);
@@ -36,6 +36,8 @@ using namespace std;
 		if (tempPos.y <= 0 || tempPos.y + rect->getSize().y > 600)
 			return;
 		rect->setPosition(tempPos);
+		if(CheckCollision(ball))
+			ball->BounceOff(rect->getPosition().y + PADDLE_LENGTH / 2);
 	}
 
 	int Paddle::GetScore() {
@@ -52,4 +54,10 @@ using namespace std;
 		window->draw(*rect);
 		text.setPosition(rect->getPosition());
 		window->draw(text);
+	}
+
+	bool Paddle::CheckCollision(Ball* b) {
+		if (rect->getGlobalBounds().intersects(b->GetGlobalBounds()))
+			return true;
+		return false;
 	}

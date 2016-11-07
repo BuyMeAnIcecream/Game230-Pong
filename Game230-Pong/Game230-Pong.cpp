@@ -1,6 +1,6 @@
 
 #include <vector>
-#include "Ball.h"
+#include "Paddle.h"
 
 #include <random>
 #include <iostream>
@@ -164,11 +164,12 @@ int main()
 	bool vsAI = true;
 	
 	sf::RenderWindow window(sf::VideoMode(SCREEN_WIDTH, SCREEN_HEIGHT), "SFML works!");
-	Paddle* p1 = new Paddle(Vector2f(SCREEN_WIDTH - PADDLE_THICKNESS, SCREEN_HEIGHT / 2), PADDLE_THICKNESS, PADDLE_LENGTH);
-	Paddle* p2 = new Paddle(Vector2f(0, SCREEN_HEIGHT / 2), PADDLE_THICKNESS, PADDLE_LENGTH);
-	Paddle* brick = new Paddle(Vector2f(SCREEN_WIDTH/1.5, SCREEN_HEIGHT / 1.5), PADDLE_THICKNESS, PADDLE_LENGTH);
-	Ball* b = new Ball(p1,p2, brick);
-	Ball* b2 = new Ball(p1, p2,brick);
+	Ball* b = new Ball();
+	Paddle* p1 = new Paddle(Vector2f(SCREEN_WIDTH - PADDLE_THICKNESS, SCREEN_HEIGHT / 2), PADDLE_THICKNESS, PADDLE_LENGTH, b);
+	Paddle* p2 = new Paddle(Vector2f(0, SCREEN_HEIGHT / 2), PADDLE_THICKNESS, PADDLE_LENGTH,b);
+	Paddle* brick = new Paddle(Vector2f(SCREEN_WIDTH/1.5, SCREEN_HEIGHT / 1.5), PADDLE_THICKNESS, PADDLE_LENGTH,b);
+	
+	Ball* b2 = new Ball();
 	GameManager* gm = new GameManager(b,b2, p1, p2, &window);
 	Clock clock;	
 	while (window.isOpen())
@@ -185,6 +186,7 @@ int main()
 		b->Update(dt);
 //		b2->Update(dt);
 		p1->Update(dt, Player::CheckInputP1());
+		brick->Update(dt, Vector2f(0.f, 0.f));
 		if(vsAI)p2->Update(dt, Vector2f(0,StupidAI::WhereDoIGo(b,b2, p2)));
 		else p2->Update(dt, Player::CheckInputP2());
 		gm->BallWhereAreYou();
