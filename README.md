@@ -1,3 +1,3 @@
 # Game230-Pong
 
-Game Pong developed using SFML.
+Game Pong developed in C++ using SFML library.
